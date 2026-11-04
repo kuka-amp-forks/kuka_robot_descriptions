@@ -17,6 +17,9 @@
 
 #include <limits>
 #include <memory>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "rcutils/logging_macros.h"
 
@@ -90,6 +93,7 @@ CallbackReturn KukaMockHardwareInterface::on_activate(const rclcpp_lifecycle::St
     return ret;
   }
   server_state_ = static_cast<double>(HardwareEvent::CONTROL_STARTED);
+  PublishStates(true);
   return CallbackReturn::SUCCESS;
 }
 
@@ -101,6 +105,7 @@ CallbackReturn KukaMockHardwareInterface::on_deactivate(const rclcpp_lifecycle::
     return ret;
   }
   server_state_ = static_cast<double>(HardwareEvent::CONTROL_STOPPED);
+  PublishStates(true);
   return CallbackReturn::SUCCESS;
 }
 
@@ -112,64 +117,45 @@ KukaMockHardwareInterface::on_export_state_interfaces()
   const auto fri_state_prefix = interface_prefix_ + hardware_interface::FRI_STATE_PREFIX;
   const auto state_prefix = interface_prefix_ + hardware_interface::STATE_PREFIX;
 
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::SESSION_STATE, &robot_state_.session_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::CONNECTION_QUALITY, &robot_state_.connection_quality_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::SAFETY_STATE, &robot_state_.safety_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::COMMAND_MODE, &robot_state_.command_mode_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::CONTROL_MODE, &robot_state_.control_mode_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::OPERATION_MODE, &robot_state_.operation_mode_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::DRIVE_STATE, &robot_state_.drive_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::OVERLAY_TYPE, &robot_state_.overlay_type_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      fri_state_prefix, hardware_interface::TRACKING_PERFORMANCE,
-      &robot_state_.tracking_performance_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::SERVER_STATE, &server_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::CONTROL_MODE, &control_mode_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::CYCLE_TIME, &cycle_time_state_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::DRIVES_POWERED, &drives_powered_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::EMERGENCY_STOP, &emergency_stop_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::GUARD_STOP, &guard_stop_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::IN_MOTION, &in_motion_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::MOTION_POSSIBLE, &motion_possible_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::OPERATION_MODE, &operation_mode_));
-  state_interfaces.emplace_back(
-    std::make_shared<hardware_interface::StateInterface>(
-      state_prefix, hardware_interface::ROBOT_STOPPED, &robot_stopped_));
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::SESSION_STATE,
+    &robot_state_.session_state_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::CONNECTION_QUALITY,
+    &robot_state_.connection_quality_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::SAFETY_STATE,
+    &robot_state_.safety_state_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::COMMAND_MODE,
+    &robot_state_.command_mode_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::CONTROL_MODE,
+    &robot_state_.control_mode_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::OPERATION_MODE,
+    &robot_state_.operation_mode_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::DRIVE_STATE,
+    &robot_state_.drive_state_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::OVERLAY_TYPE,
+    &robot_state_.overlay_type_);
+  ExportState(
+    state_interfaces, fri_state_prefix, hardware_interface::TRACKING_PERFORMANCE,
+    &robot_state_.tracking_performance_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::SERVER_STATE, &server_state_);
+  ExportState(
+    state_interfaces, state_prefix, hardware_interface::CONTROL_MODE, &control_mode_state_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::CYCLE_TIME, &cycle_time_state_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::DRIVES_POWERED, &drives_powered_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::EMERGENCY_STOP, &emergency_stop_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::GUARD_STOP, &guard_stop_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::IN_MOTION, &in_motion_);
+  ExportState(
+    state_interfaces, state_prefix, hardware_interface::MOTION_POSSIBLE, &motion_possible_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::OPERATION_MODE, &operation_mode_);
+  ExportState(state_interfaces, state_prefix, hardware_interface::ROBOT_STOPPED, &robot_stopped_);
 
   return state_interfaces;
 }
@@ -181,26 +167,56 @@ KukaMockHardwareInterface::on_export_command_interfaces()
 
   const auto config_prefix = interface_prefix_ + hardware_interface::CONFIG_PREFIX;
 
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::CONTROL_MODE, &control_mode_));
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::INTERPOLATION_COUNT, &interpolation_count_));
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::RECEIVE_MULTIPLIER, &receive_multiplier_));
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::SEND_PERIOD, &send_period_ms_));
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::DRIVE_STATE, &drive_state_));
-  command_interfaces.emplace_back(
-    std::make_shared<hardware_interface::CommandInterface>(
-      config_prefix, hardware_interface::CYCLE_TIME, &cycle_time_ms_));
+  ExportCommand(
+    command_interfaces, config_prefix, hardware_interface::CONTROL_MODE, &control_mode_);
+  ExportCommand(
+    command_interfaces, config_prefix, hardware_interface::INTERPOLATION_COUNT,
+    &interpolation_count_);
+  ExportCommand(
+    command_interfaces, config_prefix, hardware_interface::RECEIVE_MULTIPLIER,
+    &receive_multiplier_);
+  ExportCommand(
+    command_interfaces, config_prefix, hardware_interface::SEND_PERIOD, &send_period_ms_);
+  ExportCommand(command_interfaces, config_prefix, hardware_interface::DRIVE_STATE, &drive_state_);
+  ExportCommand(command_interfaces, config_prefix, hardware_interface::CYCLE_TIME, &cycle_time_ms_);
 
   return command_interfaces;
+}
+
+void KukaMockHardwareInterface::ExportState(
+  std::vector<hardware_interface::StateInterface::ConstSharedPtr> & state_interfaces,
+  const std::string & prefix, const std::string & name, const double * value)
+{
+  auto state_interface = std::make_shared<hardware_interface::StateInterface>(prefix, name);
+  std::ignore = state_interface->set_value(*value, true);
+  exported_states_.emplace_back(state_interface, value);
+  state_interfaces.push_back(state_interface);
+}
+
+void KukaMockHardwareInterface::ExportCommand(
+  std::vector<hardware_interface::CommandInterface::SharedPtr> & command_interfaces,
+  const std::string & prefix, const std::string & name, double * value)
+{
+  auto command_interface = std::make_shared<hardware_interface::CommandInterface>(prefix, name);
+  std::ignore = command_interface->set_value(*value, true);
+  exported_commands_.emplace_back(command_interface, value);
+  command_interfaces.push_back(command_interface);
+}
+
+void KukaMockHardwareInterface::PublishStates(bool wait_for_lock)
+{
+  for (const auto & [state_interface, value] : exported_states_)
+  {
+    std::ignore = state_interface->set_value(*value, wait_for_lock);
+  }
+}
+
+void KukaMockHardwareInterface::FetchCommands()
+{
+  for (const auto & [command_interface, value] : exported_commands_)
+  {
+    std::ignore = command_interface->get_value(*value, false);
+  }
 }
 
 return_type KukaMockHardwareInterface::read(
@@ -227,6 +243,7 @@ return_type KukaMockHardwareInterface::read(
   next_iteration_time_ += std::chrono::nanoseconds(cycle_time_nano_);
   std::this_thread::sleep_until(next_iteration_time_);
 
+  PublishStates(false);
   return return_type::OK;
 }
 
@@ -238,6 +255,8 @@ return_type KukaMockHardwareInterface::write(
   {
     return ret;
   }
+
+  FetchCommands();
 
   if (roundtrip_time_micro_ != 0)
   {
@@ -287,6 +306,7 @@ return_type KukaMockHardwareInterface::write(
           }
 
           std::this_thread::sleep_for(sleep_time);
+          FetchCommands();
           current_count = static_cast<uint32_t>(interpolation_count_);
         }
       }
