@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "mock_components/generic_system.hpp"
@@ -47,11 +48,26 @@ public:
   return_type write(const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
 protected:
+  // Exports a state interface that mirrors value.
+  void ExportState(
+    std::vector<hardware_interface::StateInterface::ConstSharedPtr> & state_interfaces,
+    const std::string & prefix, const std::string & name, const double * value);
+
+  void ExportCommand(
+    std::vector<hardware_interface::CommandInterface::SharedPtr> & command_interfaces,
+    const std::string & prefix, const std::string & name, double * value);
+
+  // Copies the states into the exported interfaces; without wait_for_lock a busy one is skipped.
+  void PublishStates(bool wait_for_lock);
+
+  // Takes the controllers' commands; a busy interface keeps the last one.
+  void FetchCommands();
+
   // Sunrise robot state structure
   struct RobotState
   {
     double tracking_performance_ = 1;
-    // Enum values represented with doubles (as all interfaces must be pointers to doubles)
+    // Enum values represented with doubles (as all interfaces are doubles)
     double session_state_ = 0;
     double connection_quality_ = 0;
     double command_mode_ = 0;
@@ -84,6 +100,12 @@ protected:
   double operation_mode_ = 0.0;
   double robot_stopped_ = 1.0;
   RobotState robot_state_;
+
+  // The exported interfaces own their values; each is paired with the value it mirrors.
+  std::vector<std::pair<hardware_interface::StateInterface::SharedPtr, const double *>>
+    exported_states_;
+  std::vector<std::pair<hardware_interface::CommandInterface::SharedPtr, double *>>
+    exported_commands_;
 
   // KUKA-specific parameters
   std::chrono::nanoseconds cycle_time_nano_;
